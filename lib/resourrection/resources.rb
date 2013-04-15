@@ -1,9 +1,9 @@
 module Resourrection
     module HTTPMethodResponder
-        def respond(method, params, response)
-            @params, @response = params, response
+        def respond(method, route, params, response)
+            @route, @params, @response = route, params, response
             response = send(method)
-            @params, @response = nil
+            @route, @params, @response = nil
 
             serialize(response)
         end
@@ -12,7 +12,7 @@ module Resourrection
             data.to_json
         end
 
-        attr_reader :params, :response
+        attr_reader :route, :params, :response
     end
 
     class Resource
@@ -81,7 +81,9 @@ module Resourrection
 
         # responding to HTTP methods
         def get
-            dataset.all
+            processed_dataset = route.features.inject(dataset){|ds, f| f.process_dataset(ds, params)}
+            result = processed_dataset.all
+            route.features.inject(result){|res, f| f.process_output(processed_dataset, res, params)}
         end
         
         def post

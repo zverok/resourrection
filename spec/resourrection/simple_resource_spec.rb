@@ -135,13 +135,4 @@ describe Resourrection do
             end
         end
     end
-
-    describe 'paging' do
-    end
-
-    describe 'ordering' do
-    end
-
-    describe 'filtering' do
-    end
 end

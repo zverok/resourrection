@@ -1,13 +1,20 @@
-* nested resource
-* paged, ordered, filtered
-* поддержка dataset; поддержка вычисляемого model для nested resource
+* ordered, filtered
+
+* поддержка dataset (или лучше default filters?.. или бог с ним вообще?)
+* поддержка вычисляемого model для nested resource (может и не понадобиться!)
+
 * настройка root
+
 * json/jsonp
+
 * valid/invalid (422)
-* проверка content-type
-* проверка статусов
+
+* content-type
 * put требует полного ресурса и полностью его заменяет, а patch — патчит
 
+* links?
+
+* проверка статусов
 
 * доки?
 
