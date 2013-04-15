@@ -98,5 +98,79 @@ describe Resourrection do
             end
 
         end
+
+        describe 'single resource' do
+            let(:object){child.create(title: 'object', parent: base)}
+            let(:url){"/models/#{base.id}/children/#{object.id}.json"}
+
+            describe 'GET' do
+                subject{response_of_get url}
+                it{should be_successful}
+                its(:body){should == object.to_json}
+
+                context "when no base found" do
+                    let(:url){"/models/#{base.id + 1_000}/children/#{object.id}.json"}
+                    it{should_not be_successful}
+                    its(:status){should == 404}
+                end
+
+                context "when no object found" do
+                    let(:url){"/models/#{base.id}/children/#{object.id + 1_000}.json"}
+                    it{should_not be_successful}
+                    its(:status){should == 404}
+                end
+            end
+
+            describe 'PUT' do
+                before{
+                    put_json url, {title: 'changed'}
+                }
+                
+                subject{
+                    last_response
+                }
+
+                it{should be_successful}
+                
+                describe "changed object" do
+                    subject{object.tap(&:reload)}
+                    
+                    its(:title){should == 'changed'}
+                end
+            end
+
+            describe 'PATCH' do
+                before{
+                    patch_json url, {title: 'changed'}
+                }
+                
+                subject{
+                    last_response
+                }
+
+                it{should be_successful}
+                
+                describe "changed object" do
+                    subject{object.tap(&:reload)}
+                    
+                    its(:title){should == 'changed'}
+                end
+            end
+
+            describe 'DELETE' do
+                before{
+                    delete url
+                }
+                subject{
+                    last_response
+                }
+                it{should be_successful}
+                
+                specify{
+                    child.find(id: object.id).should be_nil
+                }
+            end
+        end
+
     end
 end

@@ -16,9 +16,9 @@ module Resourrection
     end
 
     class Resource
-        def initialize(model, id)
+        def initialize(model, id, params = {})
             @model = model
-            @object = @model.find(id: id) or raise(Sinatra::NotFound)
+            @object = @model.find(params.merge(id: id)) or raise(Sinatra::NotFound)
         end
 
         attr_reader :model, :object
@@ -63,6 +63,11 @@ module Resourrection
         def get_nested_collection(association_name)
             association = model.association_reflection(association_name)
             ResourceCollection.new(association[:class], association[:class].filter(association[:key] => object.id), association[:key] => object.id)
+        end
+
+        def get_nested_resource(association_name, id)
+            association = model.association_reflection(association_name)
+            Resource.new(association[:class], id, association[:key] => object.id)
         end
     end
 
