@@ -1,9 +1,11 @@
-* настройка root
+* root-на-приём и no root на отдачу?
 * json/jsonp
-* dynamic dataset? (mentions.join(:mention_details))
+* dynamic dataset (mentions.join(:mention_details))
+* подменить в мнемозине classy на resourrect и погонять спеки
 
 ========================================================================
-* content-type более основательно (через mime и т.п.)
+* полноценная настройка root
+* content-type более основательно (через mime, в HTTPResponder#respond пробросить)
 * проброс флагов в to_json/serialize?
     json/jsonp
     data в моделях

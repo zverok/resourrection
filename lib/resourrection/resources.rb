@@ -1,3 +1,5 @@
+require 'sequel/extensions/inflector' # Require for #singularize method
+
 module Resourrection
     module HTTPMethodResponder
         def respond(method, route, params, response)
@@ -29,7 +31,9 @@ module Resourrection
         end
 
         def put
-            to_set = params.symbolize_keys.only(*object.columns).except(:id)
+            data = params[route.name.singularize]
+            data and data.kind_of?(Hash) or raise(ArgumentError, "Can't put resource from #{data.inspect}")
+            to_set = data.symbolize_keys.only(*object.columns).except(:id)
             object.set(to_set)
             if object.valid?
                 object.save
@@ -41,7 +45,9 @@ module Resourrection
         end
 
         def patch
-            to_set = params.symbolize_keys.only(*object.columns).except(:id)
+            data = params[route.name.singularize]
+            data and data.kind_of?(Hash) or raise(ArgumentError, "Can't patch resource from #{data.inspect}")
+            to_set = data.symbolize_keys.only(*object.columns).except(:id)
             object.set(to_set)
             if object.valid?
                 object.save
@@ -88,7 +94,9 @@ module Resourrection
         
         def post
             response.status = 201
-            to_set = params.symbolize_keys.only(*model.columns).merge(@additional_params)
+            data = params[route.name.singularize]
+            data and data.kind_of?(Hash) or raise(ArgumentError, "Can't create resource from #{data.inspect}")
+            to_set = data.symbolize_keys.only(*model.columns).merge(@additional_params)
             model.create(to_set)
         end
 

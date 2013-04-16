@@ -52,7 +52,7 @@ describe Resourrection do
                 let(:data){ {title: 'created'} }
                 
                 before{
-                    post_json url, data
+                    post_json url, model: data
                 }
 
                 subject{last_response}
@@ -86,7 +86,7 @@ describe Resourrection do
 
             describe 'PUT' do
                 before{
-                    put_json url, {title: 'changed'}
+                    put_json url, model: {title: 'changed'}
                 }
                 
                 subject{
@@ -104,7 +104,7 @@ describe Resourrection do
 
             describe 'PATCH' do
                 before{
-                    patch_json url, {title: 'changed'}
+                    patch_json url, model: {title: 'changed'}
                 }
                 
                 subject{
