@@ -131,6 +131,29 @@ RSpec::Matchers.define :be_successful do
     end
 end
 
+
+RSpec::Matchers.define :be_sorted_by_key do |key|
+    match do |actual|
+        @mapped = actual.map{|hash| hash[key]}
+        @mapped.sort.should == @mapped
+    end
+
+    failure_message_for_should do |actual|
+        "expected to be sorted by #{key}, in fact having #{@mapped.inspect}"
+    end
+end
+
+RSpec::Matchers.define :be_reverse_sorted_by_key do |key|
+    match do |actual|
+        @mapped = actual.map{|hash| hash[key]}
+        @mapped.sort.reverse.should == @mapped
+    end
+
+    failure_message_for_should do |actual|
+        "expected to be reverse sorted by #{key}, in fact having #{@mapped.inspect}"
+    end
+end
+
 RSpec.configure do |config|
     config.include(Resourrection::SpecHelpers::WebHelper)
 end

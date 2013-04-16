@@ -59,52 +59,8 @@ module Resourrection
             features << Paged.new(*arg)
         end
 
-        #def ordered(*arg)
-            #features << Ordered.new(*arg)
-        #end
-    end
-
-    class RouteFeature
-        def process_dataset(dataset, params)
-            dataset
-        end
-
-        def process_output(dataset, output, params)
-            output
-        end
-    end
-
-    # route features
-    class Paged < RouteFeature
-        def initialize(page_param_name, pagesize_param_name, options = {})
-            @page_param_name, @pagesize_param_name = page_param_name, pagesize_param_name
-            @default = options.delete(:default)
-        end
-        
-        def process_dataset(dataset, params)
-            page, pagesize = process_params(params)
-            dataset.limit(page*pagesize, pagesize)
-        end
-
-        def process_output(dataset, output, params)
-            page, pagesize = process_params(params)
-
-            {
-                'content' => output,
-                'pager' => {
-                    'page' => page,
-                    'next' => page+1,
-                    'total' => (dataset.unlimited.count / pagesize.to_f).ceil
-                }
-            }
-        end
-
-        def process_params(params)
-            page = params.delete(@page_param_name) || 1
-            pagesize = params.delete(@pagesize_param_name) || @default or
-                raise(ArgumentError, "No pagesize param provided")
-
-            [page.to_i, pagesize.to_i]
+        def ordered(*arg)
+            features << Ordered.new(*arg)
         end
     end
 

@@ -6,6 +6,7 @@ require 'resourrection/core_ext'
 require 'resourrection/request_body_parser'
 require 'resourrection/resources'
 require 'resourrection/routes'
+require 'resourrection/route_features'
 
 module Resourrection
     def resourrections; @resourrections ||= [] end
