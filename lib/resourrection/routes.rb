@@ -34,12 +34,14 @@ module Resourrection
             route, model = self, @model
             [:get, :put, :patch, :delete].each do |method|
                 app.send(method, url){|id|
+                    content_type 'application/json'
                     route.make_resource(id).respond(method, route, params, response)
                 }
             end
 
             [:get, :post].each do |method|
                 app.send(method, collection_url){
+                    content_type 'application/json'
                     ResourceCollection.new(model).respond(method, route, params, response)
                 }
             end
@@ -88,6 +90,7 @@ module Resourrection
             route, association, base = self, @association, @base
             [:get, :put, :patch, :delete].each do |method|
                 app.send(method, url){|*arg|
+                    content_type 'application/json'
                     route.make_resource(*arg).
                         respond(method, route, params, response)
                 }
@@ -95,6 +98,7 @@ module Resourrection
 
             [:get, :post].each do |method|
                 app.send(method, collection_url){|*arg|
+                    content_type 'application/json'
                     base.make_resource(*arg).
                         get_nested_collection(association).
                         respond(method, route, params, response)
