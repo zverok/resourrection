@@ -11,7 +11,7 @@ describe Resourrection do
         }
     }
     
-    let(:model){
+    let!(:model){
         Class.new(Sequel::Model(:models)){
             set_schema{
                 primary_key :id
@@ -19,30 +19,29 @@ describe Resourrection do
             }
         }
     }
-    before{
-        model.create_table!
+    let!(:child){
+        Class.new(Sequel::Model(:children)){
+            set_schema{
+                primary_key :id
+                foreign_key :parent_id
+                string :title
+            }
+
+            many_to_one :parent, class: model, key: :parent_id
+        }
     }
 
+    before{
+        model.create_table!
+        child.create_table!
+        model.one_to_many :children, class: child, key: :parent_id
+    }
+
+    let!(:base){model.create(title: 'base')}
+    let!(:other){model.create(title: 'other')}
+
     describe 'nesting' do
-        let(:child){
-            Class.new(Sequel::Model(:children)){
-                set_schema{
-                    primary_key :id
-                    foreign_key :parent_id
-                    string :title
-                }
-
-                many_to_one :parent, class: model, key: :parent_id
-            }
-        }
-
-        let!(:base){model.create(title: 'base')}
-        let!(:other){model.create(title: 'other')}
-
         before{
-            child.create_table!
-            model.one_to_many :children, class: child, key: :parent_id
-            
             m = model
             
             app.instance_eval do
@@ -171,6 +170,70 @@ describe Resourrection do
                 }
             end
         end
+    end
 
+    context 'when we need to go deeper' do
+        let(:grandchild){
+            Class.new(Sequel::Model(:grandchildren)){
+                set_schema{
+                    primary_key :id
+                    foreign_key :parent_id
+                    string :title
+                }
+            }
+        }
+
+        before{
+            grandchild.create_table!
+            child.one_to_many :grandchildren, class: grandchild, key: :parent_id
+            grandchild.many_to_one :parent, class: child, key: :parent_id
+
+            m = model
+            
+            app.instance_eval do
+                resourrect 'models', model: m do
+                    resourrect 'children', association: :children do
+                        resourrect 'grandchildren', association: :grandchildren
+                    end
+                end
+            end
+        }
+
+        let(:base_child){child.create(parent: base, title: 'base child')}
+        let(:other_child){child.create(parent: base, title: 'other child')}
+
+        describe 'collection' do
+            let(:url){"/models/#{base.id}/children/#{base_child.id}/grandchildren.json"}
+            
+            describe 'GET' do
+                let!(:gclist){
+                    (1..5).map{|i| grandchild.create(parent: base_child, title: "grandchild-#{i}")}
+                }
+                let!(:others_gclist){
+                    (1..5).map{|i| grandchild.create(parent: other_child, title: "not a grandchild-#{i}")}
+                }
+                subject{
+                    response_of_get url
+                }
+
+                it{should be_successful}
+                its(:json){should be_kind_of(Array)}
+                its(:json){should =~ JSON.parse(gclist.to_json)}
+
+                context "when wrong granny" do
+                    let(:url){"/models/#{base.id + 10_000}/children/#{base_child.id}.json"}
+
+                    it{should_not be_successful}
+                    its(:status){should == 404}
+                end
+
+                context "when wrong parent" do
+                    let(:url){"/models/#{base.id}/children/#{base_child.id + 10_000}.json"}
+
+                    it{should_not be_successful}
+                    its(:status){should == 404}
+                end
+            end
+        end
     end
 end

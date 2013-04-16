@@ -77,14 +77,18 @@ module Resourrection
 
         attr_reader :base, :association
 
+        def make_resource(*arg)
+            base.make_resource(*arg[0..-2]).
+                get_nested_resource(association, arg.last)
+        end
+
         protected
 
         def setup_routes!
             route, association, base = self, @association, @base
             [:get, :put, :patch, :delete].each do |method|
                 app.send(method, url){|*arg|
-                    base.make_resource(*arg[0..-2]).
-                        get_nested_resource(association, arg.last).
+                    route.make_resource(*arg).
                         respond(method, route, params, response)
                 }
             end
@@ -99,11 +103,11 @@ module Resourrection
         end
 
         def base_url
-            "#{base.base_url}/(.+)/#{name}"
+            "#{base.base_url}/(\\d+)/#{name}"
         end
 
         def url
-            %r{#{base_url}/(.+).json}
+            %r{#{base_url}/(\d+).json}
         end
 
         def collection_url
