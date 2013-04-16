@@ -62,6 +62,10 @@ module Resourrection
         def ordered(*arg)
             features << Ordered.new(*arg)
         end
+
+        def filtered(*arg, &block)
+            features << Filtered.new(*arg, &block)
+        end
     end
 
     class NestedResourceRoute < ResourceRoute

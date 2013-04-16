@@ -163,6 +163,63 @@ describe Resourrection do
     end
 
     describe 'filtering' do
+        let!(:list){
+            (1..5).map{|i| model.create(title: "model-#{i}")}
+        }
+
+        before{
+            m = model
+            
+            app.instance_eval do
+                resourrect 'models', model: m do
+                    filtered 'filters' do
+                        on('title'){|dataset, filter| dataset.where(title: filter)}
+                        on('title_in', :array){|dataset, filter| dataset.where(title: filter)}
+
+                        on('title_include', :like){|dataset, filter| dataset.where(:title.like(filter))}
+
+                        on('title_after'){|dataset, filter| dataset.where{|r| r.title >= filter} }
+                    end
+                end
+            end
+        }
+
+        shared_context 'filter checker' do
+            let(:from_db){model.filter(database_filter)}
+            let(:from_api){response_of_get(url, :filters => api_filter).json}
+
+            specify{
+                from_api.should =~ JSON.parse(from_db.to_json)
+            }
+        end
+
+        describe 'plain filter' do
+            let(:database_filter){ {title: 'model-3'} }
+            let(:api_filter){ {title: 'model-3'} }
+
+            include_context 'filter checker'
+        end
+
+        describe 'list filter' do
+            let(:database_filter){ {title: ['model-3', 'model-5']} }
+            let(:api_filter){ {title_in: 'model-3,model-5'} }
+
+            include_context 'filter checker'
+        end
+
+        describe 'like filter' do
+            let(:database_filter){ :title.like('%odel%') }
+            let(:api_filter){ {title_include: 'odel'} }
+
+            include_context 'filter checker'
+        end
+
+        describe 'more filter' do
+            let(:database_filter){ Sequel.expr(:title) >= 'model-3' }
+            let(:api_filter){ {title_after: 'model-3'} }
+
+            include_context 'filter checker'
+        end
     end
 
 end

@@ -65,4 +65,50 @@ module Resourrection
             order_direction == '-' ? sym.desc : sym.asc
         end
     end
+
+    class Filtered < RouteFeature
+        def initialize(filter_param_name, options = {}, &block)
+            @filter_param_name = filter_param_name
+            @filters = {}
+            instance_eval &block
+        end
+
+        def process_dataset(dataset, params)
+            filters = params[@filter_param_name]
+            filters.inject(dataset){|ds, (name, val)|
+                filter = @filters[name] or raise(ArgumentError, "Unknown filter #{name.inspect}")
+                filter.apply(ds, val)
+            }
+        end
+
+        private
+
+        def on(name, type=:string, &processor)
+            @filters[name] = Filter.new(name, type, processor)
+        end
+
+        class Filter
+            def initialize(name, type, processor)
+                @name, @type, @processor = name, type, processor
+            end
+
+            def apply(dataset, value)
+                value = parse(value.to_s)
+                @processor.call(dataset, value)
+            end
+
+            def parse(value)
+                case @type
+                when :string
+                    value
+                when :array
+                    value.split(/\s*,\s*/)
+                when :like
+                    "%#{value}%"
+                else
+                    raise(ArgumentError, "Can't parse filter typed #{@type.inspect}")
+                end
+            end
+        end
+    end
 end
