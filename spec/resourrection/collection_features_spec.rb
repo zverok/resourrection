@@ -126,8 +126,6 @@ describe Resourrection do
             (1..5).map{|i| model.create(title: "paged-#{5-i}")} # title natural order will be reversed
         }
 
-        let(:response){response_of_get url, params}
-
         before{
             m = model
             
@@ -142,6 +140,8 @@ describe Resourrection do
                 end
             end
         }
+
+        let(:response){response_of_get url, params}
 
         describe 'default' do
             let(:params){ {} }
@@ -222,4 +222,28 @@ describe Resourrection do
         end
     end
 
+    describe 'dataset adjusting' do
+        let!(:list){
+            (1..5).map{|i| model.create(title: "model-#{i}")}
+        }
+
+        before{
+            m = model
+            
+            app.instance_eval do
+                resourrect 'models', model: m do
+                    adjusted{|dataset|
+                        dataset.exclude(title: 'model-3')
+                    }
+                end
+            end
+        }
+
+        let(:from_db){model.exclude(title: 'model-3')}
+        let(:from_api){response_of_get(url).json}
+
+        specify{
+            from_api.should =~ JSON.parse(from_db.to_json)
+        }
+    end
 end

@@ -1,7 +1,6 @@
-* root-на-приём и no root на отдачу?
 * json/jsonp
-* dynamic dataset (mentions.join(:mention_details))
-* подменить в мнемозине classy на resourrect и погонять спеки
+
+> подменить в мнемозине classy на resourrect и погонять спеки
 
 ========================================================================
 * полноценная настройка root

@@ -111,4 +111,14 @@ module Resourrection
             end
         end
     end
+
+    class Adjusted < RouteFeature
+        def initialize(&block)
+            @adjuster = block
+        end
+
+        def process_dataset(dataset, *)
+            @adjuster.call(dataset)
+        end
+    end
 end
