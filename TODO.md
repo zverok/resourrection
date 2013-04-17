@@ -1,4 +1,5 @@
 * json/jsonp
+* response.location после 201
 
 > подменить в мнемозине classy на resourrect и погонять спеки
 

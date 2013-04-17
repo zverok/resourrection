@@ -33,7 +33,7 @@ module Resourrection
         def put
             data = params[route.name.singularize]
             data and data.kind_of?(Hash) or raise(ArgumentError, "Can't put resource from #{data.inspect}")
-            to_set = data.symbolize_keys.only(*object.columns).except(:id)
+            to_set = data.symbolize_keys
             object.set(to_set)
             if object.valid?
                 object.save
@@ -47,7 +47,7 @@ module Resourrection
         def patch
             data = params[route.name.singularize]
             data and data.kind_of?(Hash) or raise(ArgumentError, "Can't patch resource from #{data.inspect}")
-            to_set = data.symbolize_keys.only(*object.columns).except(:id)
+            to_set = data.symbolize_keys
             object.set(to_set)
             if object.valid?
                 object.save
@@ -67,13 +67,29 @@ module Resourrection
 
         # nesting
         def get_nested_collection(association_name)
-            association = model.association_reflection(association_name)
-            ResourceCollection.new(association[:class], association[:class].filter(association[:key] => object.id), association[:key] => object.id)
+            association = model.association_reflection(association_name) or
+                raise(RuntimeError, "Association not found: #{model}/#{association_name}")
+
+            key = association[:key] || association[:cache][:key]
+
+            object.respond_to?(:"#{association_name}_dataset") or
+                raise(RuntimeError, "#{object.inspect} seems not to have #{association_name}_dataset association method")
+            dataset = object.send(:"#{association_name}_dataset")
+
+            ResourceCollection.new(dataset.model, dataset, key => object.id)
         end
 
         def get_nested_resource(association_name, id)
-            association = model.association_reflection(association_name)
-            Resource.new(association[:class], id, association[:key] => object.id)
+            association = model.association_reflection(association_name) or
+                raise(RuntimeError, "Association not found: #{model}/#{association_name}")
+
+            key = association[:key] || association[:cache][:key]
+
+            object.respond_to?(:"#{association_name}_dataset") or
+                raise(RuntimeError, "#{object.inspect} seems not to have #{association_name}_dataset association method")
+            dataset = object.send(:"#{association_name}_dataset")
+
+            Resource.new(dataset.model, id, key => object.id)
         end
     end
 
@@ -96,7 +112,7 @@ module Resourrection
             response.status = 201
             data = params[route.name.singularize]
             data and data.kind_of?(Hash) or raise(ArgumentError, "Can't create resource from #{data.inspect}")
-            to_set = data.symbolize_keys.only(*model.columns).merge(@additional_params)
+            to_set = data.symbolize_keys.merge(@additional_params)
             model.create(to_set)
         end
 
