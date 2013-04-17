@@ -135,4 +135,65 @@ describe Resourrection do
             end
         end
     end
+
+    describe 'with associations' do
+        let(:author){
+            Class.new(Sequel::Model(:authors)){
+                set_schema{
+                    primary_key :id
+                    string :name
+                }
+            }
+        }
+        let(:text){
+            Class.new(Sequel::Model(:texts)){
+                set_schema{
+                    primary_key :id
+                    foreign_key :author_id
+                    string :title
+                }
+            }
+        }
+        before{
+            text.create_table!
+            author.create_table!
+            author.one_to_many :texts, class: text, key: :author_id
+            text.many_to_one :author, class: author, key: :author_id
+
+            t = text
+            
+            app.instance_eval do
+                resourrect 'texts', model: t
+            end
+        }
+
+        describe 'POST' do
+            context 'when author exists' do
+                let!(:existing_author){author.create(name: 'vasya')}
+
+                let(:response){
+                    response_of_post '/texts.json', text: {title: 'blah', author: {id: existing_author.id}}
+                }
+
+                let(:created_id){response.json['id']}
+
+                subject{text[created_id]}
+
+                its(:author){should == existing_author}
+            end
+            
+            context 'when new author' do
+                let(:response){
+                    response_of_post '/texts.json', text: {title: 'blah', author: {name: 'vasya'}}
+                }
+
+                let(:created_id){response.json['id']}
+
+                subject{text[created_id].author}
+
+                it{should_not be_nil}
+                its(:name){should == 'vasya'}
+            end
+        end
+    end
 end

@@ -113,9 +113,30 @@ module Resourrection
             data = params[route.name.singularize]
             data and data.kind_of?(Hash) or raise(ArgumentError, "Can't create resource from #{data.inspect}")
             to_set = data.symbolize_keys.merge(@additional_params)
+            ensure_associations(to_set)
             model.create(to_set)
         end
 
         include HTTPMethodResponder
+
+        private
+
+        def ensure_associations(data)
+            data.select{|key, _| model.associations.include?(key)}.each do |key, values|
+                values.kind_of?(Hash) or raise(ArgumentError, "Can't create associated object from #{values.inspect}")
+                values = values.symbolize_keys
+                association = model.association_reflection(key) or
+                    raise(RuntimeError, "Association not found: #{model}/#{key}")
+                    
+                associated_model = association[:class] || association[:cache][:class]
+                associated_object = if values.keys.include?(associated_model.primary_key)
+                    k = values[associated_model.primary_key]
+                    associated_model[k] or raise(RuntimeError, "Can't find associated object #{key} by primary key #{k.inspect}")
+                else
+                    associated_model.find_or_create(values)
+                end
+                data[key] = associated_object
+            end
+        end
     end
 end
