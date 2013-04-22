@@ -21,19 +21,20 @@ module Resourrection
             dataset.limit(pagesize, (page-1)*pagesize)
         end
 
-        def process_output(dataset, output, params)
-            page, pagesize = process_params(params)
-            total = (dataset.unlimited.count / pagesize.to_f).ceil
+        #def process_output(dataset, output, params)
+            #page, pagesize = process_params(params)
+            ##total = (dataset.unlimited.count / pagesize.to_f).ceil
 
-            {
-                'content' => output,
-                'pager' => {
-                    'page' => page,
-                    'next' => (page >= total ? nil : page+1),
-                    'total' => total
-                }
-            }
-        end
+            #{
+                #'content' => output,
+                #'pager' => {
+                    #'page' => page,
+                    #'next' => page+1
+                    ##'next' => (page >= total ? nil : page+1),
+                    ##'total' => total
+                #}
+            #}
+        #end
 
         def process_params(params)
             page = params[@page_param_name] || 1
@@ -49,6 +50,7 @@ module Resourrection
             @order_param_name = order_param_name
             @orders = options.delete(:orders) or raise(ArgumentError, "ordered feature requires :orders param")
             @default = options.delete(:default)
+            @descending = options.delete(:descending)
         end
         
         def process_dataset(dataset, params)
@@ -62,7 +64,11 @@ module Resourrection
             sym = @orders[order_name] or
                 raise(ArgumentError, "Unsupported order: #{order_name.inspect}")
 
-            order_direction == '-' ? sym.desc : sym.asc
+            if @descending
+                order_direction == '-' ? sym.asc : sym.desc
+            else
+                order_direction == '-' ? sym.desc : sym.asc
+            end
         end
     end
 
@@ -74,7 +80,7 @@ module Resourrection
         end
 
         def process_dataset(dataset, params)
-            filters = params[@filter_param_name]
+            filters = params[@filter_param_name] || []
             filters.inject(dataset){|ds, (name, val)|
                 filter = @filters[name] or raise(ArgumentError, "Unknown filter #{name.inspect}")
                 filter.apply(ds, val)
@@ -105,8 +111,23 @@ module Resourrection
                     value.split(/\s*,\s*/)
                 when :like
                     "%#{value}%"
+                when :numeric
+                    value.to_i
+                when :numeric_array
+                    value.split(/\s*,\s*/).map(&:to_i)
+                when :boolean
+                    case value
+                    when 'true'
+                        true
+                    when 'false'
+                        false
+                    else
+                        raise ArgumentError, "Unparseable value #{value.inspect} for filter #{@name}"
+                    end
+                when :time
+                    Time.parse(value)
                 else
-                    raise(ArgumentError, "Can't parse filter typed #{@type.inspect}")
+                    raise ArgumentError, "Can't parse filter #{@name} typed #{@type.inspect}"
                 end
             end
         end

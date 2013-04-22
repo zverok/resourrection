@@ -18,9 +18,10 @@ module Resourrection
     end
 
     class Resource
-        def initialize(model, id, params = {})
+        def initialize(model, id, dataset = model.dataset, params = {})
             @model = model
-            @object = @model.find(params.merge(id: id)) or raise(Sinatra::NotFound)
+            @base = params.delete(:base)
+            @object = dataset.where(id: id).first or raise(Sinatra::NotFound)
         end
 
         attr_reader :model, :object
@@ -76,7 +77,7 @@ module Resourrection
                 raise(RuntimeError, "#{object.inspect} seems not to have #{association_name}_dataset association method")
             dataset = object.send(:"#{association_name}_dataset")
 
-            ResourceCollection.new(dataset.model, dataset, key => object.id)
+            ResourceCollection.new(dataset.model, dataset, key => object.id, :base => object)
         end
 
         def get_nested_resource(association_name, id)
@@ -89,14 +90,15 @@ module Resourrection
                 raise(RuntimeError, "#{object.inspect} seems not to have #{association_name}_dataset association method")
             dataset = object.send(:"#{association_name}_dataset")
 
-            Resource.new(dataset.model, id, key => object.id)
+            Resource.new(dataset.model, id, dataset, base: object)
         end
     end
 
     class ResourceCollection
-        def initialize(model, dataset = model.dataset, additional_params = {})
+        def initialize(model, dataset = model.dataset, params = {})
             @model, @dataset = model, dataset
-            @additional_params = additional_params # FIXME: ugly
+            @base = params.delete(:base)
+            @additional_params = params # FIXME: ugly
         end
 
         attr_reader :model, :dataset
@@ -109,12 +111,15 @@ module Resourrection
         end
         
         def post
-            response.status = 201
             data = params[route.name.singularize]
             data and data.kind_of?(Hash) or raise(ArgumentError, "Can't create resource from #{data.inspect}")
             to_set = data.symbolize_keys.merge(@additional_params)
             ensure_associations(to_set)
-            model.create(to_set)
+
+            response.status = 201
+            model.create(to_set).tap{|o|
+                response.headers['location'] = "#{route.url_for(o, @base)}.json"
+            }
         end
 
         include HTTPMethodResponder

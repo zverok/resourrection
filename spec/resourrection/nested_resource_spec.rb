@@ -88,6 +88,12 @@ describe Resourrection do
                 it{should be_successful}
                 its(:status){should == 201}
 
+                describe 'headers' do
+                    let(:id){last_response.json['id']}
+                    subject{last_response.headers}
+                    its(['Location']){should == "/models/#{base.id}/children/#{id}.json"}
+                end
+
                 describe 'response' do
                     subject{last_response.json}
                     it{should be_kind_of(Hash)}

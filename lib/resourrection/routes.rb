@@ -20,6 +20,10 @@ module Resourrection
             "#{base_url}/:id.json"
         end
 
+        def url_for(object, base_object = nil)
+            "#{base_url}/#{object.id}"
+        end
+
         def collection_url
             "#{base_url}.json"
         end
@@ -86,6 +90,10 @@ module Resourrection
         def make_resource(*arg)
             base.make_resource(*arg[0..-2]).
                 get_nested_resource(association, arg.last)
+        end
+
+        def url_for(object, base_object)
+            "#{base.url_for(base_object)}/#{name}/#{object.id}"
         end
 
         protected
